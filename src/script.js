@@ -2,7 +2,7 @@ const express = require("express");
 const session = require("express-session");
 const path = require("path");
 const bcrypt = require("bcrypt");
-const collection = require("./config");
+const { User, Admin } = require("./config");
 
 const app = express();
 
@@ -48,8 +48,7 @@ app.get("/login", (req, res) => {
 
 app.post("/login", async (req, res) => {
   try {
-    const check = await collection.findOne({ email: req.body.email });
-    console.log(check);
+    const check = await User.findOne({ email: req.body.email });
 
     if (check === null) {
       return res
@@ -85,26 +84,45 @@ app.post("/signup", async (req, res) => {
     name: req.body.name,
     email: req.body.email,
     password: req.body.password,
+    role: req.body.role,
   };
+  
+  const salt = 10;
+  const hashedPassword = await bcrypt.hash(data.password, salt);
 
-  const existingUser = await collection.findOne({ email: data.email });
+  if (data.role === "user") {
+    const existingUser = await User.findOne({ email: data.email });
+    if (existingUser) {
+      res.send("Email already registered. Please choose a different email.");
+    } else {
+      const userData = new User({
+        name: data.name,
+        email: data.email,
+        password: hashedPassword,
+      });
 
-  if (existingUser) {
-    res.send("Email already registered. Please choose a different email.");
+      userData.save();
+
+      req.session.loggedIn = true;
+      return res.redirect("/");
+    }
   } else {
-    const salt = 10;
-    const hashedPassword = await bcrypt.hash(data.password, salt);
+    const existingAdmin = await Admin.findOne({ email: data.email });
+    if (existingAdmin) {
+      res.send("Email already registered. Please choose a different email.");
+    } else {
+      const adminData = new Admin({
+        name: data.name,
+        email: data.email,
+        password: hashedPassword,
+      });
+      console.log(adminData);
 
-    const userData = new collection({
-      name: data.name,
-      email: data.email,
-      password: hashedPassword,
-    });
+      adminData.save();
 
-    userData.save();
-
-    req.session.loggedIn = true;
-    return res.redirect("/");
+      req.session.loggedIn = true;
+      return res.redirect("/");
+    }
   }
 });
 
