@@ -56,13 +56,7 @@
             >
           </div>
 
-          <div class="mb-2" id="secretKeyDiv">
-            <label for="email" class="form-label text-light">Secret Key</label>
-            <div class="input-group">
-              <input type="text" class="form-control" name="secret" required />
-              <span class="input-group-text"><i class="bx bxs-key"></i></span>
-            </div>
-          </div>
+          <div class="mb-2" id="secretKeyDiv"></div>
           <div class="mb-2">
             <label for="email" class="form-label text-light">Name</label>
             <div class="input-group">
@@ -128,7 +122,7 @@
           newDiv.innerHTML = `
             <label for="secret" class="form-label text-light">Secret Key</label>
             <div class="input-group">
-              <input type="text" class="form-control" name="secret" required />
+              <input type="password" class="form-control" name="secret" required />
               <span class="input-group-text"><i class='bx bxs-key' ></i></span>
             </div>
           `;

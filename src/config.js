@@ -34,9 +34,6 @@ const adminSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  secretKey: {
-    type: String,
-  },
 });
 
 const User = new mongoose.model("users", userSchema);
