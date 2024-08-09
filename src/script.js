@@ -42,13 +42,25 @@ app.get("/", (req, res) => {
   }
 });
 
-app.get("/admin", (req, res) => {
+app.post("/", (req, res) => {
+  plNames.push(req.body.plName);
+  res.redirect("/");
+});
+
+app.get("/admin", async (req, res) => {
   if (!req.session.admin) {
     return res.status(200).redirect("/login");
-  } else {
+  }
+  try {
+    const users = await User.find();
+
     return res.status(200).render("admin", {
       pageTitle: "Admin Page",
+      users: users,
     });
+  } catch (error) {
+    console.error("Error fetching users:", error);
+    return res.status(500).send("Server error. Please try again later.");
   }
 });
 
@@ -106,7 +118,7 @@ app.post("/login", async (req, res) => {
 });
 
 app.get("/signup", (req, res) => {
-  if (req.session.loggedIn) {
+  if (req.session.role) {
     return res.status(200).redirect("/");
   }
   res.status(200).render("signup");
@@ -137,7 +149,7 @@ app.post("/signup", async (req, res) => {
 
       userData.save();
 
-      req.session.loggedIn = true;
+      req.session.user = { email: req.body.email };
       return res.redirect("/");
     }
   } else {
@@ -155,15 +167,91 @@ app.post("/signup", async (req, res) => {
 
       adminData.save();
 
-      req.session.loggedIn = true;
+      req.session.user = { email: req.body.email };
       return res.redirect("/admin");
     }
   }
 });
 
-app.post("/", (req, res) => {
-  plNames.push(req.body.plName);
-  res.redirect("/");
+app.get("/edit/:id", async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    res.render("edit", { user, pageTitle: "Edit User" });
+  } catch (err) {
+    console.log(err);
+    res.status(500).send("Server error");
+  }
+});
+
+app.post("/edit/:id", async (req, res) => {
+  try {
+    const updatedUser = {
+      name: req.body.name,
+      email: req.body.email,
+    };
+
+    await User.findByIdAndUpdate(req.params.id, updatedUser);
+
+    res.redirect("/admin");
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Server error");
+  }
+});
+
+app.get("/delete/:id", async (req, res) => {
+  try {
+    await User.findByIdAndDelete(req.params.id);
+    res.redirect("/admin");
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Server error");
+  }
+});
+
+app.post("/search", async (req, res) => {
+  const { searchType, searchValue } = req.body;
+  try {
+    let users;
+
+    if (searchType === "Name") {
+      users = await User.find({ name: searchValue });
+    } else if (searchType === "Email") {
+      users = await User.find({ email: searchValue });
+    }
+
+    res.render("admin", {
+      pageTitle: "User Details",
+      users, 
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("An error occurred while searching for users.");
+  }
+  
+});
+
+app.get('/add-user', (req, res) => {
+  res.render('add-user', { pageTitle: 'Add New User' });
+});
+
+app.post('/add-user', async (req, res) => {
+  const { name, email, password } = req.body;
+
+  try {
+    const newUser = new User({
+      name: name,
+      email: email,
+      password: password
+    });
+
+    await newUser.save();
+
+    res.redirect('/admin');
+  } catch (err) {
+    console.error('Error adding new user:', err);
+    res.status(500).send('Server Error');
+  }
 });
 
 app.get("/logout", (req, res) => {
