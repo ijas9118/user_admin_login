@@ -2,6 +2,8 @@ const express = require("express");
 const session = require("express-session");
 const path = require("path");
 const bcrypt = require("bcrypt");
+const flash = require("connect-flash");
+
 const { User, Admin } = require("./config");
 
 require("dotenv").config();
@@ -25,6 +27,13 @@ app.use(
 
 app.use((req, res, next) => {
   res.set("Cache-Control", "no-store, no-cache, must-revalidate, private");
+  next();
+});
+
+app.use(flash());
+
+app.use((req, res, next) => {
+  res.locals.error_msg = req.flash("error_msg");
   next();
 });
 
@@ -84,11 +93,8 @@ app.post("/login", async (req, res) => {
     }
 
     if (check === null) {
-      return res
-        .status(404)
-        .send(
-          "<p>Incorrect email or password. <a href='/login'>Try again</a></p>"
-        );
+      req.flash("error_msg", "Incorrect email or password.");
+      return res.redirect("/login");
     }
 
     const isMatch = await bcrypt.compare(req.body.password, check.password);
@@ -103,17 +109,13 @@ app.post("/login", async (req, res) => {
         return res.redirect("/");
       }
     } else {
-      return res
-        .status(404)
-        .send('<p>Incorrect password. <a href="/login">Try again</a></p>');
+      req.flash("error_msg", "Incorrect password.");
+      return res.redirect("/login");
     }
   } catch (error) {
     console.error(error);
-    return res
-      .status(500)
-      .send(
-        '<p>Server error. Please try again later. <a href="/login">Try again</a></p>'
-      );
+    req.flash("error_msg", "Server error. Please try again later.");
+    return res.redirect("/login");
   }
 });
 
@@ -222,35 +224,34 @@ app.post("/search", async (req, res) => {
 
     res.render("admin", {
       pageTitle: "User Details",
-      users, 
+      users,
     });
   } catch (error) {
     console.error(error);
     res.status(500).send("An error occurred while searching for users.");
   }
-  
 });
 
-app.get('/add-user', (req, res) => {
-  res.render('add-user', { pageTitle: 'Add New User' });
+app.get("/add-user", (req, res) => {
+  res.render("add-user", { pageTitle: "Add New User" });
 });
 
-app.post('/add-user', async (req, res) => {
+app.post("/add-user", async (req, res) => {
   const { name, email, password } = req.body;
 
   try {
     const newUser = new User({
       name: name,
       email: email,
-      password: password
+      password: password,
     });
 
     await newUser.save();
 
-    res.redirect('/admin');
+    res.redirect("/admin");
   } catch (err) {
-    console.error('Error adding new user:', err);
-    res.status(500).send('Server Error');
+    console.error("Error adding new user:", err);
+    res.status(500).send("Server Error");
   }
 });
 

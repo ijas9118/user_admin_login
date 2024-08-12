@@ -27,6 +27,9 @@
           <div class="row mb-4">
             <h1 class="fw-bolder text-center text-light">Login</h1>
           </div>
+          <% if (error_msg.length > 0) { %>
+          <div class="alert alert-danger" role="alert"><%= error_msg %></div>
+          <% } %>
           <span class="text-light">Login as: </span>
           <div class="form-check form-check-inline ms-2">
             <input
